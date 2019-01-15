@@ -1,12 +1,12 @@
 package sample
 
-const val DEFAULT_UNIT = "cel"
 const val EMPTY_CITY_NAME = ""
-val DEFAULT_SELECTED_VIEW = WeatherApi.ONE_DAY
+val DEFAULT_UNIT = Units.METRIC
+val DEFAULT_SELECTED_VIEW = WeatherApi.SIX_DAYS
 
 expect class DataProvider() {
     companion object {
-        fun getUnit(): String
+        fun getUnit(): Units
         fun getCity(): String
 
         fun setData(response: String)
@@ -25,6 +25,27 @@ expect class HttpClient() {
     }
 }
 
+class UIHelper() {
+    companion object {
+        fun getTemperatureUnit(): String {
+            return if (isMetric()) {
+                "C"
+            } else {
+                "F"
+            }
+        }
+        fun getWindSpeedUnit(): String {
+            return if (isMetric()) {
+                "km/h"
+            } else {
+                "mph"
+            }
+        }
+        private fun isMetric(): Boolean {
+            return DataProvider.getUnit() == DEFAULT_UNIT
+        }
+    }
+}
 expect fun startApplication()
 expect fun initViewElements()
 
@@ -34,10 +55,25 @@ const val APPID = "3e675f42cb009cd3b9f5b2c9c4ac630a"
 
 var selectedView = DEFAULT_SELECTED_VIEW
 
+enum class Units(val unitName: String) {
+    METRIC("metric"),
+    IMPERIAL("imperial");
+
+    companion object {
+        fun toEnum(unitName: String): Units {
+            for (unit in Units.values()) {
+                if (unitName == unit.unitName) {
+                    return unit
+                }
+            }
+            return DEFAULT_UNIT
+        }
+    }
+}
 enum class WeatherApi(val url: String) {
     ONE_DAY("weather"),
-    //FIVE_DAYS("forecast") //forecast for more than 1 day is in the paid subscription
-    FIVE_DAYS("weather")
+    //SIX_DAYS("forecast") //forecast for more than 1 day is in the paid subscription
+    SIX_DAYS("weather")
 }
 class WeatherForecast(
     val temperature: Double,
@@ -46,13 +82,8 @@ class WeatherForecast(
     val windSpeed: Double,
     val windDegree: Double
 )
-fun prepareUrl(endpoint: WeatherApi, city: String, unit: String): String {
-    var params = "q=$city&APPID=$APPID"
-    params += if (unit == DEFAULT_UNIT) {
-        "&units=metric"
-    } else {
-        "&units=imperial"
-    }
+fun prepareUrl(endpoint: WeatherApi, city: String, unit: Units): String {
+    var params = "q=$city&APPID=$APPID&units=${unit.unitName}"
     return WEATHER_CORE_URL + endpoint.url + '?' + params
 //    return "https://jsonplaceholder.typicode.com/todos/1"
 }
@@ -63,7 +94,7 @@ fun getWeatherData(endpoint: WeatherApi) {
 fun refreshData() {
     when (selectedView) {
         WeatherApi.ONE_DAY -> getWeatherData(WeatherApi.ONE_DAY)
-        WeatherApi.FIVE_DAYS -> getWeatherData(WeatherApi.FIVE_DAYS)
+        WeatherApi.SIX_DAYS -> getWeatherData(WeatherApi.SIX_DAYS)
     }
 }
 /******************** START APPLICATION ********************/

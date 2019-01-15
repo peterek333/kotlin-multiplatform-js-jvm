@@ -4,7 +4,7 @@ import tornadofx.*
 
 actual class DataProvider {
     actual companion object {
-        actual fun getUnit(): String {
+        actual fun getUnit(): Units {
             return DEFAULT_UNIT
         }
         actual fun getCity(): String {
