@@ -2,14 +2,12 @@ package sample
 
 const val EMPTY_CITY_NAME = ""
 val DEFAULT_UNIT = Units.METRIC
-val DEFAULT_SELECTED_VIEW = WeatherApi.SIX_DAYS
+val DEFAULT_SELECTED_VIEW = WeatherApi.ONE_DAY
 
 expect class DataProvider() {
     companion object {
         fun getUnit(): Units
         fun getCity(): String
-
-        fun setData(response: String)
     }
 }
 
@@ -25,7 +23,7 @@ expect class HttpClient() {
     }
 }
 
-class UIHelper() {
+class UIHelper {
     companion object {
         fun getTemperatureUnit(): String {
             return if (isMetric()) {
@@ -47,7 +45,8 @@ class UIHelper() {
     }
 }
 expect fun startApplication()
-expect fun initViewElements()
+expect fun showTodayWeather(weatherForecast: WeatherForecast)
+expect fun showSixDaysForecast(weatherForecast: WeatherForecast)
 
 /******************** IMPLEMENTED LOGIC ********************/
 const val WEATHER_CORE_URL = "https://api.openweathermap.org/data/2.5/"
@@ -85,11 +84,14 @@ class WeatherForecast(
 fun prepareUrl(endpoint: WeatherApi, city: String, unit: Units): String {
     var params = "q=$city&APPID=$APPID&units=${unit.unitName}"
     return WEATHER_CORE_URL + endpoint.url + '?' + params
-//    return "https://jsonplaceholder.typicode.com/todos/1"
 }
 fun getWeatherData(endpoint: WeatherApi) {
     HttpClient.httpGET(
         prepareUrl(endpoint, DataProvider.getCity(), DataProvider.getUnit()))
+}
+fun setData(response: String) {
+    val weatherForecast = DataHelper.parseData(response)
+    showWeatherOnView(weatherForecast)
 }
 fun refreshData() {
     when (selectedView) {
@@ -97,8 +99,13 @@ fun refreshData() {
         WeatherApi.SIX_DAYS -> getWeatherData(WeatherApi.SIX_DAYS)
     }
 }
+fun showWeatherOnView(weatherForecast: WeatherForecast) {
+    when (selectedView) {
+        WeatherApi.ONE_DAY -> showTodayWeather(weatherForecast)
+        WeatherApi.SIX_DAYS -> showSixDaysForecast(weatherForecast)
+    }
+}
 /******************** START APPLICATION ********************/
 fun main(args: Array<String>) {
     startApplication()
-
 }

@@ -24,6 +24,7 @@ var submit: HTMLButtonElement? = null
 var dataPlace: HTMLDivElement? = null
 var oneDayBtn: HTMLElement? = null
 var sixDaysBtn: HTMLElement? = null
+var tabs: List<HTMLElement?> = mutableListOf()
 
 actual class DataProvider {
     actual companion object {
@@ -37,10 +38,6 @@ actual class DataProvider {
         }
         actual fun getCity(): String {
             return cityInput?.value ?: EMPTY_CITY_NAME
-        }
-        actual fun setData(response: String) {
-            val weatherForecast = DataHelper.parseData(response)
-            showWeatherOnView(weatherForecast)
         }
     }
 }
@@ -64,7 +61,7 @@ actual class HttpClient {
             val xmlHttpRequest = XMLHttpRequest()
             xmlHttpRequest.onreadystatechange = {
                 if (xmlHttpRequest.readyState == 4.toShort() && xmlHttpRequest.status == 200.toShort())
-                    DataProvider.setData(xmlHttpRequest.responseText)
+                    setData(xmlHttpRequest.responseText)
             }
             xmlHttpRequest.open("GET", url)
             xmlHttpRequest.send(null)
@@ -76,15 +73,17 @@ actual fun startApplication() {
     window.onload = {
         initViewElements()
         initListeners()
+        activeTab()
     }
-
 }
-actual fun initViewElements() {
+fun initViewElements() {
     cityInput = document.getElementById(CITY_ID) as HTMLInputElement
     submit = document.getElementById(SUBMIT_ID) as HTMLButtonElement
     dataPlace = document.getElementById(DATA_PLACE_ID) as HTMLDivElement
     oneDayBtn = document.getElementById(ONE_DAY_BTN_ID) as HTMLElement
     sixDaysBtn = document.getElementById(SIX_DAYS_BTN_ID) as HTMLElement
+    tabs += oneDayBtn
+    tabs += sixDaysBtn
 }
 fun initListeners() {
     submit?.onclick = {
@@ -92,25 +91,25 @@ fun initListeners() {
     }
     oneDayBtn?.onclick = {
         selectedView = WeatherApi.ONE_DAY
-        oneDayBtn?.addClass(ACTIVE_CLASS)
-        sixDaysBtn?.removeClass(ACTIVE_CLASS)
+        activeTab()
         refreshData()
     }
     sixDaysBtn?.onclick = {
         selectedView = WeatherApi.SIX_DAYS
-        sixDaysBtn?.addClass(ACTIVE_CLASS)
-        oneDayBtn?.removeClass(ACTIVE_CLASS)
+        activeTab()
         refreshData()
     }
 }
-fun showWeatherOnView(weatherForecast: WeatherForecast) {
+fun activeTab() {
+    for (tab in tabs) {
+        tab?.removeClass(ACTIVE_CLASS)
+    }
     when (selectedView) {
-        WeatherApi.ONE_DAY -> showTodayWeather(weatherForecast)
-        WeatherApi.SIX_DAYS -> showSixDaysForecast(weatherForecast)
+        WeatherApi.ONE_DAY -> oneDayBtn?.addClass(ACTIVE_CLASS)
+        WeatherApi.SIX_DAYS -> sixDaysBtn?.addClass(ACTIVE_CLASS)
     }
 }
-
-fun showTodayWeather(weatherForecast: WeatherForecast) {
+actual fun showTodayWeather(weatherForecast: WeatherForecast) {
     dataPlace?.innerHTML = """
         <div class="row">
             <div class="center-col">
@@ -130,8 +129,7 @@ fun showTodayWeather(weatherForecast: WeatherForecast) {
         </div>
     """.trimIndent()
 }
-
-fun showSixDaysForecast(weatherForecast: WeatherForecast) {
+actual fun showSixDaysForecast(weatherForecast: WeatherForecast) {
     var innerHtml = ""
     for (row in 1..2) {
         var cols = ""
